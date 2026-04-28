@@ -1,0 +1,5 @@
+dist/
+.pypirc
+*.egg-info
+
+.DS_Store

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netshell"
+version = "1.0.0"
+description = "A CLI HTTP shell to connect to remote shells"
+readme = "README.md"
+authors = [{ name = "Richard A. Dubniczky" }]
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.33.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/dubniczky/Netshell"
+
+[project.scripts]
+netshell = "netshell.main:main"
