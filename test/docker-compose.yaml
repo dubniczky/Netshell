@@ -1,0 +1,6 @@
+services:
+  test-env:
+    build: .
+    ports:
+      - "8000:8000"
+    command: [ "python", "testserver.py" ]
