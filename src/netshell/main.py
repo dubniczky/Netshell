@@ -6,7 +6,13 @@ from html import unescape
 import urllib.parse
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 import requests
+from prompt_toolkit import PromptSession
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
+
+HISTORY_LOCATION = ".netshell_history"
+QUERY_PLACEHOLDER = "--NETSHELL_PLACEHOLDER--"
 
 # Configuration
 address : str
@@ -18,6 +24,7 @@ user_agent = None
 prefix = None
 suffix = None
 no_preflight = False
+no_history = False
 
 
 def voutput(message):
@@ -58,8 +65,8 @@ def send_command(command):
         wrapped_command = urllib.parse.quote(wrapped_command)
     
     # Insert a placeholder in the URL and replace it with the wrapped command to ensure proper encoding and avoid issues with special characters in the command
-    url = set_query_param(address, parameter, '--NETSHELL_PLACEHOLDER--')
-    url = url.replace('--NETSHELL_PLACEHOLDER--', wrapped_command)
+    url = set_query_param(address, parameter, QUERY_PLACEHOLDER)
+    url = url.replace(QUERY_PLACEHOLDER, wrapped_command)
     
     voutput(f"Sent command: {url}")
     if len(url) > 2000:
@@ -104,6 +111,7 @@ def main():
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--no-url-encode", action="store_true", help="Disable URL encoding of commands")
     parser.add_argument("--no-preflight", action="store_true", help="Skip preflight checks and go straight to the shell interface")
+    parser.add_argument("--no-history", action="store_true", help=f"Skip saving command history into {HISTORY_LOCATION} file")
 
     args = parser.parse_args()
 
@@ -129,9 +137,13 @@ def main():
     print(f"Entering interactive shell: all commands except ones starting with ! are sent to the server.\nType '!exit' or Ctrl+C to leave and '!help' for available Netshell commands.")
 
     # Shell-like environment
+    session = PromptSession(
+        history=FileHistory(HISTORY_LOCATION) if not no_history else None,
+        auto_suggest=AutoSuggestFromHistory(),
+    )
     try:
         while True:
-            command = input(f"\n{host_name} > ")
+            command = session.prompt(f"\n{host_name} > ")
             if command.lower() == '!exit':
                 print("Exiting shell.")
                 break

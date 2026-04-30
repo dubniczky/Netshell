@@ -2,4 +2,6 @@ dist/
 .pypirc
 *.egg-info
 
+.netshell_history
+
 .DS_Store
