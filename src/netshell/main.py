@@ -11,6 +11,7 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 
+VERSION = "1.0.1"
 HISTORY_LOCATION = ".netshell_history"
 QUERY_PLACEHOLDER = "--NETSHELL_PLACEHOLDER--"
 
@@ -99,7 +100,7 @@ def preflight_request():
 
 def main():
     global address, parameter, url_encode, verbose, cookies, user_agent, prefix, suffix, no_preflight
-    parser = argparse.ArgumentParser(description=" A lightweight HTTP CLI Shell that enables custom command injections into vulnerable web applications with a familiar shell-like interface.")
+    parser = argparse.ArgumentParser(description=f"Netshell v{VERSION} - A lightweight HTTP CLI Shell that enables custom command injections into vulnerable web applications with a familiar shell-like interface.")
     parser.add_argument("--address", "-a", help="Target address containing the full path. E.g., http://example.com/vulnerable.php")
     parser.add_argument("--parameter", "-p", help="Parameter name where the injection will occur. E.g., 'cmd' for http://example.com/vulnerable.php?cmd=...")
     parser.add_argument("--cookies", "-c", help="Use cookies for the request")
