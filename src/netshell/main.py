@@ -2,9 +2,9 @@ import random
 import string
 import argparse
 from html import unescape
+
 import urllib.parse
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
-
 import requests
 
 
@@ -123,13 +123,21 @@ def main():
         print("Skipping preflight checks.")
     
     host_name = urllib.parse.urlparse(address).netloc
+    
+    print(f"Entering interactive shell: all commands except ones starting with ! are sent to the server.\nType '!exit' or Ctrl+C to leave and '!help' for available Netshell commands.")
 
     # Shell-like environment
     while True:
         command = input(f"\n{host_name} > ")
-        if command.lower() in ['exit', 'quit']:
+        if command.lower() == '!exit':
             print("Exiting shell.")
             break
+        elif command.lower() == '!help':
+            print("\nAll Netshell commands start with '!' and are used to control the shell or automate tasks. Other commands are sent to the server. Available commands:")
+            print("  !exit - Exit the shell")
+            print("  !help - Show this help message")
+            print("\nAuthor: Richard A. Dubniczky, https://dubniczky.com")
+            print("Source: https://github.com/dubniczky/Netshell")
         
         output = send_command(command)
         if output is not None:
