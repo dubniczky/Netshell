@@ -127,23 +127,28 @@ def main():
     print(f"Entering interactive shell: all commands except ones starting with ! are sent to the server.\nType '!exit' or Ctrl+C to leave and '!help' for available Netshell commands.")
 
     # Shell-like environment
-    while True:
-        command = input(f"\n{host_name} > ")
-        if command.lower() == '!exit':
-            print("Exiting shell.")
-            break
-        elif command.lower() == '!help':
-            print("\nAll Netshell commands start with '!' and are used to control the shell or automate tasks. Other commands are sent to the server. Available commands:")
-            print("  !exit - Exit the shell")
-            print("  !help - Show this help message")
-            print("\nAuthor: Richard A. Dubniczky, https://dubniczky.com")
-            print("Source: https://github.com/dubniczky/Netshell")
-        
-        output = send_command(command)
-        if output is not None:
+    try:
+        while True:
+            command = input(f"\n{host_name} > ")
+            if command.lower() == '!exit':
+                print("Exiting shell.")
+                break
+            elif command.lower() == '!help':
+                print("\nAll Netshell commands start with '!' and are used to control the shell or automate tasks. Other commands are sent to the server. Available commands:")
+                print("  !exit - Exit the shell")
+                print("  !help - Show this help message")
+                print("\nAuthor: Richard A. Dubniczky, https://dubniczky.com")
+                print("Source: https://github.com/dubniczky/Netshell")
+            
+            try:
+                output = send_command(command)
+            except Exception as e:
+                print(f"[!] Error occurred while sending command: {e}")
+                continue
+
             print(f"{output}")
-        else:
-            print("[!] Failed to retrieve command output.")
+    except KeyboardInterrupt:
+        print("\nExiting shell.")
 
 
 if __name__ == "__main__":
