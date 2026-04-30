@@ -1,3 +1,4 @@
+import os
 import random
 import string
 import argparse
@@ -114,6 +115,26 @@ def command_flag() -> bool:
     return True
 
 
+def command_save(command: str, content: str) -> bool:
+    path = command[len('!save '):].strip()
+    if not path:
+        print("[!] No file path provided. Usage: !save <local_file_path>")
+        return False
+    
+    # Get full path
+    full_path = os.path.abspath(path)
+    
+    try:
+        with open(full_path, 'w') as f:
+            f.write(content)
+    except Exception as e:
+        print(f"[!] Error saving file: {e}")
+        return False
+    
+    print(f"[i] Output saved to {full_path}")
+    return True
+
+
 def main():
     global address, parameter, url_encode, verbose, cookies, user_agent, prefix, suffix, no_preflight
     parser = argparse.ArgumentParser(description=f"Netshell v{VERSION} - A lightweight HTTP CLI Shell that enables custom command injections into vulnerable web applications with a familiar shell-like interface.")
@@ -158,21 +179,31 @@ def main():
         history=FileHistory(HISTORY_LOCATION) if not no_history else None,
         auto_suggest=AutoSuggestFromHistory(),
     )
+    output = None
     try:
         while True:
             command = session.prompt(f"\n{host_name} > ")
-            if command.lower() == '!exit':
+            if command.lower().startswith('!exit'):
                 print("Exiting shell.")
                 break
-            elif command.lower() == '!help':
+            elif command.lower().startswith('!help'):
                 print("\nAll Netshell commands start with '!' and are used to control the shell or automate tasks. Other commands are sent to the server. All command only work on Linux systems. Available commands:")
                 print("  !exit - Exit the shell")
                 print("  !help - Show this help message")
                 print("  !flag - Search for files with 'flag' in their name and display potential candidates")
+                print("  !save <local_file_path> - Save the output of the last command to a local file on your machine. E.g., '!save output.txt'")
                 print("\nAuthor: Richard A. Dubniczky, https://dubniczky.com")
                 print("Source: https://github.com/dubniczky/Netshell")
-            elif command.lower() == '!flag':
-                command_flag()
+            elif command.lower().startswith('!flag'):
+                if not command_flag():
+                    print("[!] There was an error while searching for flag files.")
+            elif command.lower().startswith('!save'):
+                if not output:
+                    print("[!] No command output available to save.")
+                    continue
+                command_save(command, output)
+            elif command.startswith('!'):
+                print(f"[!] Unknown Netshell command: {command}. Type '!help' for available commands.")
 
             try:
                 output = send_command(command)
