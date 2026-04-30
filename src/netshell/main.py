@@ -62,6 +62,8 @@ def send_command(command):
     url = url.replace('--NETSHELL_PLACEHOLDER--', wrapped_command)
     
     voutput(f"Sent command: {url}")
+    if len(url) > 2000:
+        print(f"The URL length is very long: {len(url)} characters. Some servers may not process it correctly.")
     response = requests.get(url, cookies=cookies, headers={'User-Agent': user_agent} if user_agent else None)
     voutput(f"Status code: {response.status_code}")
     voutput(f"Response size: {len(response.text)}")
