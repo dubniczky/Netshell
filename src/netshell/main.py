@@ -143,8 +143,8 @@ def main():
     parser.add_argument("--parameter", "-p", help="Parameter name where the injection will occur. E.g., 'cmd' for http://example.com/vulnerable.php?cmd=...")
     parser.add_argument("--cookies", "-c", help="Use cookies for the request")
     parser.add_argument("--agent", help="Set a custom User-Agent header for the requests")
-    parser.add_argument("--prefix", "-P", help="Set a custom prefix for the commands. This is usually the command escape. By default there is none. No modifications apply to this, so make sure to encode it properly if needed.")
-    parser.add_argument("--suffix", "-S", help="Set a custom suffix for the commands. This is usually the command escape. By default there is none. No modifications apply to this, so make sure to encode it properly if needed.")
+    parser.add_argument("--prefix", "-P", help="Set a custom prefix for the commands. This is usually the command escape. By default there is none.")
+    parser.add_argument("--suffix", "-S", help="Set a custom suffix for the commands. This is usually the command escape. By default there is none.")
 
 
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")

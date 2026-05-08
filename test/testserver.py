@@ -10,6 +10,13 @@ app = FastAPI()
 def request_good(q: str):
     cmd = os.popen(q).read()
     return HTMLResponse(content=f"<html><body><h1>{cmd}</h1></body></html>")
+
+
+@app.get("/ping", response_class=HTMLResponse)
+def request_ping(ip: str):
+    cmd = os.popen(f"ping -c 1 '{ip}'").read()
+    return HTMLResponse(content=f"<html><body><h1>{cmd}</h1></body></html>")
+
     
 @app.get("/bad", response_class=HTMLResponse)
 def request_bad(q: str):
