@@ -1,4 +1,5 @@
 import os
+import sys
 import random
 import string
 import argparse
@@ -150,6 +151,10 @@ def main():
     parser.add_argument("--no-url-encode", action="store_true", help="Disable URL encoding of commands")
     parser.add_argument("--no-preflight", action="store_true", help="Skip preflight checks and go straight to the shell interface")
     parser.add_argument("--no-history", action="store_true", help=f"Skip saving command history into {HISTORY_LOCATION} file")
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        return
 
     args = parser.parse_args()
 
