@@ -14,7 +14,7 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 HISTORY_LOCATION = ".netshell_history"
 QUERY_PLACEHOLDER = "--NETSHELL_PLACEHOLDER--"
 
