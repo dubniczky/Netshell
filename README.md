@@ -65,10 +65,11 @@ Command line options:
 - `-h`, `--help` - show this help message and exit
 - `--address`, `-a` _ADDRESS_ Target address containing the full path. E.g., http://example.com/vulnerable.php
 - `--parameter`, `-p` _PARAMETER_ Parameter name where the injection will occur. E.g., 'cmd' for http://example.com/vulnerable.php?cmd=...
-- -`-cookies`, `-c` _COOKIES_ Use cookies for the request
-- -`-agent` _AGENT_ Set a custom User-Agent header for the requests
+- `--cookies`, `-c` _COOKIES_ Use cookies for the request
+- `--agent` _AGENT_ Set a custom User-Agent header for the requests
 - `--prefix`, `-P` _PREFIX_ Set a custom prefix for the commands. This is usually the command escape. By default there is none. No modifications apply to this, so make sure to encode it properly if needed.
 - `--suffix`, `-S` _SUFFIX_   Set a custom suffix for the commands. This is usually the command escape. By default there is none. No modifications apply to this, so make sure to encode it properly if needed.
+- `--blind`, `-b` Enable blind command execution (no output returned). The preflight checks will be adapted to detect blind command execution based on response times.
 - `--verbose`, `-v` Verbose output
 - `--no-url-encode` Disable URL encoding of commands
 - `--no-preflight` Skip preflight checks and go straight to the shell interface
@@ -92,5 +93,11 @@ netshell -a http://localhost:8000/good -p q
 A breakout injection point with the ping command `ping -c 1 '<ip>'` is on the `/ping` path with the `ip` query parameter.
 
 ```sh
-netshell -a http://localhost:8000/ping -p ip --prefix "';" --suffix " #"
+netshell -a http://localhost:8000/ping -p ip -P "';" -S " #"
+```
+
+A blind command injection point inside an echo command `echo "<t>"`. 
+
+```sh
+netshell -a http://127.0.0.1:8000/blind -p t --blind -P "\";" -S " #"
 ```
