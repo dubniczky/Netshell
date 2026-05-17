@@ -17,6 +17,12 @@ def request_ping(ip: str):
     cmd = os.popen(f"ping -c 1 '{ip}'").read()
     return HTMLResponse(content=f"<html><body><h1>{cmd}</h1></body></html>")
 
+
+@app.get("/blind", response_class=HTMLResponse)
+def request_blind(t: str):
+    cmd = os.popen(f"echo \"{t}\"").read()
+    return HTMLResponse(content=f"<html><body><h1>Command executed internally!</h1></body></html>")
+
     
 @app.get("/bad", response_class=HTMLResponse)
 def request_bad(q: str):

